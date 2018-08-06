@@ -22,6 +22,17 @@
 #include "config.h"
 #include "stats.h"
 
+// 1 3 5 6
+//
+// 0(CH3) 2(CH1) 4(CH2) 1,3(CH4)  TIM5
+//
+// 1(CH3) 5(CH1) 6(CH2) 7(CH4) TIM2
+//
+//
+// Update docs for spi
+// Use TIM5 dma (uses streams 0, 2, 4)
+//
+// Then update TIM2 to use dma also. will require moving comms to usb.
 #include <assert.h>
 /* Hardware setup:
  *  Discovery board LEDs:
