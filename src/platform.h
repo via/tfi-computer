@@ -2,6 +2,7 @@
 #define _PLATFORM_H
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #ifndef NULL
 #define NULL 0
@@ -13,7 +14,8 @@ typedef uint64_t timeval_t;
 #else
 typedef uint32_t timeval_t;
 #endif
-typedef uint16_t degrees_t;
+typedef uint32_t degrees_t;
+typedef uint32_t rpm_t;
 /* timeval_t is gauranteed to be 32 bits */
 
 timeval_t current_time();

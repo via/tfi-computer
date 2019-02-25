@@ -38,7 +38,7 @@ static void trigger_update(struct decoder *d, timeval_t t) {
   d->t0_count++;
   d->triggers_since_last_sync++;
   timeval_t diff = d->times[0] - d->times[1];
-  unsigned int slicerpm = rpm_from_time_diff(diff, d->degrees_per_trigger);
+  rpm_t slicerpm = rpm_from_time_diff(diff, d->degrees_per_trigger);
 
   if (d->state == DECODER_SYNC) {
     d->last_trigger_angle += d->degrees_per_trigger;

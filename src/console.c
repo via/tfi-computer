@@ -133,7 +133,7 @@ static int parse_keyval_pair(char **key, char **val, char **str) {
 
 static int console_set_table_element(struct table *t, const char *k, float v) {
   unsigned int row, col;
-  int n_parsed = sscanf(k, "[%d][%d]", &row, &col);
+  int n_parsed = sscanf(k, "[%u][%u]", &row, &col);
   if ((t->num_axis == 1) && (n_parsed == 1) &&
       (row < t->axis[0].num)) {
     t->data.one[row] = v;
@@ -147,8 +147,8 @@ static int console_set_table_element(struct table *t, const char *k, float v) {
 }
 
 static int console_get_table_element(const struct table *t, const char *k, float *v) {
-  int row, col;
-  int n_parsed = sscanf(k, "[%d][%d]", &row, &col);
+  unsigned int row, col;
+  int n_parsed = sscanf(k, "[%u][%u]", &row, &col);
   if ((t->num_axis == 1) && (n_parsed == 1) && 
       (row < t->axis[0].num)) {
     *v = t->data.one[row];

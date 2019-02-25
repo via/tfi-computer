@@ -17,11 +17,11 @@ struct sched_entry {
   timeval_t time;
 
   /* Otherwise an output change */
-  unsigned char output_id;
-  unsigned char output_val;
+  uint8_t output_id;
+  uint8_t output_val;
 
-  volatile unsigned char fired;
-  volatile unsigned char scheduled; /* current time is valid */
+  volatile bool fired;
+  volatile bool scheduled; /* current time is valid */
   struct output_buffer *buffer;
 };
 
@@ -37,14 +37,14 @@ struct timed_callback {
   void (*callback)(void *);
   void *data;
   timeval_t time;
-  int scheduled;
+  bool scheduled;
 };
 
 struct output_event {
   event_type_t type;
   degrees_t angle;
-  unsigned char output_id;
-  unsigned int inverted;
+  uint8_t output_id;
+  bool inverted;
 
   struct sched_entry start;
   struct sched_entry stop;
@@ -55,15 +55,15 @@ struct output_event {
 void schedule_event(struct output_event *ev);
 void deschedule_event(struct output_event *);
 
-int schedule_callback(struct timed_callback *tcb, timeval_t time);
+void schedule_callback(struct timed_callback *tcb, timeval_t time);
 
 void scheduler_callback_timer_execute();
 void initialize_scheduler();
 void scheduler_buffer_swap();
 
-int event_is_active(struct output_event *);
-int event_has_fired(struct output_event *);
-void invalidate_scheduled_events(struct output_event *, int);
+bool event_is_active(struct output_event *);
+bool event_has_fired(struct output_event *);
+void invalidate_scheduled_events(struct output_event *, unsigned int);
 
 #ifdef UNITTEST
 #include <check.h>

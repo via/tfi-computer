@@ -20,10 +20,10 @@ static struct output_buffer {
 
 #define MAX_CALLBACKS 32
 struct timed_callback *callbacks[MAX_CALLBACKS] = {0};
-static int n_callbacks = 0;
+static unsigned int n_callbacks = 0;
 
-static int sched_entry_has_fired(struct sched_entry *en) {
-  int ret = 0;
+static bool sched_entry_has_fired(struct sched_entry *en) {
+  bool ret = 0;
   disable_interrupts();
   if (en && en->buffer) {
     if (time_in_range(en->time, en->buffer->start, current_time())) {
@@ -37,13 +37,13 @@ static int sched_entry_has_fired(struct sched_entry *en) {
   return ret;
 }
 
-int event_is_active(struct output_event *ev) {
+bool event_is_active(struct output_event *ev) {
   return (sched_entry_has_fired(&ev->start) && 
           !sched_entry_has_fired(&ev->stop));
 }
 
 
-int event_has_fired(struct output_event *ev) {
+bool event_has_fired(struct output_event *ev) {
   return (sched_entry_has_fired(&ev->start) &&
           sched_entry_has_fired(&ev->stop));
 }
@@ -60,7 +60,7 @@ static struct output_buffer *buffer_for_time(timeval_t time) {
   return buf;
 }
 
-static int fired_if_failed(struct sched_entry *en, int success) {
+static bool fired_if_failed(struct sched_entry *en, bool success) {
   en->fired = !success;
   return success;
 }
@@ -86,8 +86,8 @@ static int sched_entry_disable(const struct sched_entry *en, timeval_t time) {
     return 1;
   }
 
-  int slot = time - buf->start;
-  assert((slot >= 0) && (slot < 512));
+  unsigned int slot = time - buf->start;
+  assert(slot < 512);
 
   uint16_t *addr = en->output_val ? &buf->slots[slot].on_mask : 
                                     &buf->slots[slot].off_mask;
@@ -128,8 +128,8 @@ static int sched_entry_enable(const struct sched_entry *en, timeval_t time) {
     return 1;
   }
 
-  int slot = time - buf->start;
-  assert((slot >= 0) && (slot < 512));
+  unsigned int slot = time - buf->start;
+  assert(slot < 512);
 
   uint16_t *addr = en->output_val ? &buf->slots[slot].on_mask : 
                                     &buf->slots[slot].off_mask;
@@ -184,7 +184,7 @@ void deschedule_event(struct output_event *ev) {
   }
 }
 
-void invalidate_scheduled_events(struct output_event *evs, int n) {
+void invalidate_scheduled_events(struct output_event *evs, unsigned int n) {
   for (int i = 0; i < n; ++i) {
     if (!evs[i].start.scheduled) {
       continue;
@@ -297,7 +297,7 @@ schedule_ignition_event(struct output_event *ev,
   
   timeval_t stop_time;
   timeval_t start_time;
-  int firing_angle;
+  degrees_t firing_angle;
 
   assert(d->rpm > 0);
   assert(config.decoder.valid);
@@ -306,7 +306,7 @@ schedule_ignition_event(struct output_event *ev,
       d->last_trigger_angle + d->offset, 720);
 
   stop_time = d->last_trigger_time + 
-    time_from_rpm_diff(d->rpm, (degrees_t)firing_angle);
+    time_from_rpm_diff(d->rpm, firing_angle);
   start_time = stop_time - time_from_us(usecs_dwell);
 
   if (ev->start.fired && ev->stop.fired) {
@@ -350,7 +350,7 @@ schedule_fuel_event(struct output_event *ev,
 
   timeval_t stop_time;
   timeval_t start_time;
-  int firing_angle;
+  degrees_t firing_angle;
 
   assert(d->rpm > 0);
   assert(config.decoder.valid);
@@ -388,7 +388,7 @@ schedule_fuel_event(struct output_event *ev,
 
 static int
 schedule_adc_event(struct output_event *ev, struct decoder *d) {
-  int firing_angle;
+  degrees_t firing_angle;
   timeval_t collect_time;
 
   assert(d->rpm > 0);
@@ -436,8 +436,7 @@ void schedule_event(struct output_event *ev) {
 }
 
 static void callback_remove(struct timed_callback *tcb) {
-  int i;
-  int tcb_pos;
+  unsigned int i, tcb_pos;
   for (i = 0; i < n_callbacks; ++i) {
     if (tcb == callbacks[i]) {
       break;
@@ -458,8 +457,7 @@ static void callback_remove(struct timed_callback *tcb) {
 
 static void callback_insert(struct timed_callback *tcb) {
 
-  int i;
-  int tcb_pos;
+  unsigned int i, tcb_pos;
   for (i = 0; i < n_callbacks; ++i) {
     if (time_before(tcb->time, callbacks[i]->time)) {
       break;
@@ -476,7 +474,7 @@ static void callback_insert(struct timed_callback *tcb) {
   tcb->scheduled = 1;
 }
 
-int schedule_callback(struct timed_callback *tcb, timeval_t time) {
+void schedule_callback(struct timed_callback *tcb, timeval_t time) {
 
   disable_interrupts();
   if (tcb->scheduled) {
@@ -495,8 +493,6 @@ int schedule_callback(struct timed_callback *tcb, timeval_t time) {
     }
   }
   enable_interrupts();
-
-  return 0;
 }
 
 void scheduler_callback_timer_execute() {
@@ -521,7 +517,7 @@ void scheduler_buffer_swap() {
 
 
   struct output_event *oev;
-  int i;
+  unsigned int i;
   for (i = 0; i < MAX_EVENTS; ++i) {
     oev = &config.events[i];
 
