@@ -14,7 +14,7 @@ typedef uint64_t timeval_t;
 #else
 typedef uint32_t timeval_t;
 #endif
-typedef uint32_t degrees_t;
+typedef int32_t degrees_t;
 typedef uint32_t rpm_t;
 /* timeval_t is gauranteed to be 32 bits */
 

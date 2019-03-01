@@ -23,15 +23,15 @@ struct timed_callback *callbacks[MAX_CALLBACKS] = {0};
 static unsigned int n_callbacks = 0;
 
 static bool sched_entry_has_fired(struct sched_entry *en) {
-  bool ret = 0;
+  bool ret = false;
   disable_interrupts();
   if (en && en->buffer) {
     if (time_in_range(en->time, en->buffer->start, current_time())) {
-      ret = 1;
+      ret = true;
     }
   }
   if (en->fired) {
-    ret = 1;
+    ret = true;
   }
   enable_interrupts();
   return ret;
@@ -60,7 +60,7 @@ static struct output_buffer *buffer_for_time(timeval_t time) {
   return buf;
 }
 
-static bool fired_if_failed(struct sched_entry *en, bool success) {
+static bool mark_fired_if_failed(struct sched_entry *en, bool success) {
   en->fired = !success;
   return success;
 }
@@ -152,12 +152,12 @@ static int sched_entry_enable(const struct sched_entry *en, timeval_t time) {
 
 static void sched_entry_update(struct sched_entry *en, timeval_t time) {
   en->buffer = buffer_for_time(time);
-  en->scheduled = 1;
+  en->scheduled = true;
   en->time = time;
 }
 
 static void sched_entry_off(struct sched_entry *en) {
-  en->scheduled = 0;
+  en->scheduled = false;
   en->buffer = NULL;
 }
 
@@ -173,9 +173,9 @@ void deschedule_event(struct output_event *ev) {
   }
 
   int success;
-  success = fired_if_failed(&ev->start, sched_entry_disable(&ev->start, ev->start.time));
+  success = mark_fired_if_failed(&ev->start, sched_entry_disable(&ev->start, ev->start.time));
   if (success) {
-    fired_if_failed(&ev->stop, sched_entry_disable(&ev->stop, ev->stop.time));
+    mark_fired_if_failed(&ev->stop, sched_entry_disable(&ev->stop, ev->stop.time));
     sched_entry_off(&ev->start);
     sched_entry_off(&ev->stop);
   }
@@ -185,7 +185,7 @@ void deschedule_event(struct output_event *ev) {
 }
 
 void invalidate_scheduled_events(struct output_event *evs, unsigned int n) {
-  for (int i = 0; i < n; ++i) {
+  for (unsigned int i = 0; i < n; ++i) {
     if (!evs[i].start.scheduled) {
       continue;
     }
@@ -206,7 +206,7 @@ static void reschedule_end(struct sched_entry *s, timeval_t old, timeval_t new) 
   int success;
   success = sched_entry_enable(s, new);
   if (success) {
-    success = fired_if_failed(s, sched_entry_disable(s, old));
+    success = mark_fired_if_failed(s, sched_entry_disable(s, old));
     if (!success) {
       sched_entry_disable(s, new);
       sched_entry_update(s, old);
@@ -267,13 +267,13 @@ void schedule_output_event_safely(struct output_event *ev,
       sched_entry_disable(&ev->start, oldstart);
       sched_entry_update(&ev->start, newstart);
     } else {
-      fired_if_failed(&ev->start, sched_entry_disable(&ev->start, newstart));
+      mark_fired_if_failed(&ev->start, sched_entry_disable(&ev->start, newstart));
     }
     if (time_before(ev->start.time, newstop) || preserve_duration) {
       reschedule_end(&ev->stop, oldstop, newstop);
     }
   } else {
-    success = fired_if_failed(&ev->start, sched_entry_disable(&ev->start, oldstart));
+    success = mark_fired_if_failed(&ev->start, sched_entry_disable(&ev->start, oldstart));
     if (!success && preserve_duration) {
       newstop += oldstart - newstart;
     }
@@ -317,10 +317,10 @@ schedule_ignition_event(struct output_event *ev,
       return 0;
     }
 
-    ev->start.fired = 0;
-    ev->stop.fired = 0;
-    ev->start.scheduled = 0;
-    ev->stop.scheduled = 0;
+    ev->start.fired = false;
+    ev->stop.fired = false;
+    ev->start.scheduled = false;
+    ev->stop.scheduled = false;
   }
 
   /* Don't let the stop time move more than 90* 
@@ -369,10 +369,10 @@ schedule_fuel_event(struct output_event *ev,
       return 0;
     }
 
-    ev->start.fired = 0;
-    ev->stop.fired = 0;
-    ev->start.scheduled = 0;
-    ev->stop.scheduled = 0;
+    ev->start.fired = false;
+    ev->stop.fired = false;
+    ev->start.scheduled = false;
+    ev->stop.scheduled = false;
   }
 
 
@@ -452,7 +452,7 @@ static void callback_remove(struct timed_callback *tcb) {
   callbacks[n_callbacks - 1] = NULL;
   n_callbacks--;
 
-  tcb->scheduled = 0;
+  tcb->scheduled = false;
 }
 
 static void callback_insert(struct timed_callback *tcb) {
@@ -471,7 +471,7 @@ static void callback_insert(struct timed_callback *tcb) {
 
   callbacks[tcb_pos] = tcb;
   n_callbacks++;
-  tcb->scheduled = 1;
+  tcb->scheduled = true;
 }
 
 void schedule_callback(struct timed_callback *tcb, timeval_t time) {
@@ -524,11 +524,11 @@ void scheduler_buffer_swap() {
     /* OEVs that were in the old buffer are no longer */
     if (oev->start.buffer == obuf) {
       oev->start.buffer = NULL;
-      oev->start.fired = 1;
+      oev->start.fired = true;
     }
     if (oev->stop.buffer == obuf) {
       oev->stop.buffer = NULL;
-      oev->stop.fired = 1;
+      oev->stop.fired = true;
     }
   }
 

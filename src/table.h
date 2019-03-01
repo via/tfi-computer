@@ -1,11 +1,13 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
+#include <platform.h>
+
 #define MAX_AXIS_SIZE 24
 
 struct table_axis {
   char name[32];
-  unsigned char num; /* Max of 24 */
+  uint8_t num; /* Max of 24 */
   int values[MAX_AXIS_SIZE];
 };
   

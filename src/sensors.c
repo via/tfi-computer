@@ -2,8 +2,8 @@
 #include "config.h"
 #include "platform.h"
 
-static volatile int adc_data_ready;
-static volatile int freq_data_ready;
+static volatile bool adc_data_ready;
+static volatile bool freq_data_ready;
 
 static float sensor_convert_linear(struct sensor_input *in, float raw) {
   float partial = raw / 4096.0f;
@@ -92,6 +92,8 @@ sensors_process() {
         break;
     }
   }
+  adc_data_ready = false;
+  freq_data_ready = false;
   for (int i = 0; i < NUM_SENSORS; ++i) {
     if (config.sensors[i].source == SENSOR_CONST) {
       config.sensors[i].processed_value = config.sensors[i].params.fixed_value;
@@ -101,11 +103,11 @@ sensors_process() {
 }
 
 void sensor_adc_new_data() {
-  adc_data_ready = 1;
+  adc_data_ready = true;
 }
 
 void sensor_freq_new_data() {
-  freq_data_ready = 1;
+  freq_data_ready = true;
 }
 
 uint32_t sensor_fault_status() {

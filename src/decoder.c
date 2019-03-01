@@ -88,7 +88,7 @@ static void sync_update(struct decoder *d) {
 
 void cam_nplusone_decoder(struct decoder *d) {
   timeval_t t0, t1;
-  int sync, trigger;
+  bool sync, trigger;
   decoder_state oldstate = d->state;
 
   t0 = d->last_t0;
@@ -124,7 +124,7 @@ void cam_nplusone_decoder(struct decoder *d) {
   }
 
   if (d->state == DECODER_SYNC) {
-    d->valid = 1;
+    d->valid = true;
     d->last_trigger_time = t0;
   } else {
     if (oldstate == DECODER_SYNC) {
@@ -140,7 +140,7 @@ void tfi_pip_decoder(struct decoder *d) {
   decoder_state oldstate = d->state;
 
   t0 = d->last_t0;
-  d->needs_decoding_t0 = 0;
+  d->needs_decoding_t0 = false;
 
   if (d->state == DECODER_NOSYNC) {
     if (d->current_triggers_rpm >= d->required_triggers_rpm) {
@@ -153,7 +153,7 @@ void tfi_pip_decoder(struct decoder *d) {
   trigger_update(d, t0);
   if (d->state == DECODER_RPM || d->state == DECODER_SYNC) {
     d->state = DECODER_SYNC;
-    d->valid = 1;
+    d->valid = false;
     d->last_trigger_time = t0;
     d->triggers_since_last_sync = 0; /* There is no sync */;
   } else {
@@ -168,8 +168,8 @@ void tfi_pip_decoder(struct decoder *d) {
 void decoder_init(struct decoder *d) {
   d->last_t0 = 0;
   d->last_t1 = 0;
-  d->needs_decoding_t0 = 0;
-  d->needs_decoding_t1 = 0;
+  d->needs_decoding_t0 = false;
+  d->needs_decoding_t1 = false;
   switch (d->type) {
     case FORD_TFI:
       d->decode = tfi_pip_decoder;
@@ -189,7 +189,7 @@ void decoder_init(struct decoder *d) {
       break;
   }
   d->current_triggers_rpm = 0;
-  d->valid = 0;
+  d->valid = false;
   d->rpm = 0;
   d->state = DECODER_NOSYNC;
   d->last_trigger_time = 0;
