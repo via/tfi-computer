@@ -39,14 +39,28 @@
  *  LD6 - Blue - PD15
  *
  *  Fixed pin mapping:
- *  Test trigger out - A0 (Uses TIM5)
- *  Event timer TIM2 slaved off TIM8
- *  Trigger 0 - PB3 (TIM2_CH2)
- *  Trigger 1 - PB10 (TIM2_CH3)
- *  Trigger 2 - PB11 (TIM2_CH4)
+ *  Event timer TIM5 slaved off TIM8 (CC4 for primary timer, 1-3 for test trigger)
+ *  Frequency/Trigger is TIM2 slaved off TIM8, uses DMA to capture times
+ *  Trigger 0   PA0 (TIM2_CH1) Stream 5
+ *  Trigger 1 - PA1 (TIM2_CH2) Stream 6
+ *  Trigger 2 - PA2 (TIM2_CH3) Stream 1
+ *  Trigger 3 - PA3 (TIM2_CH4) Stream 7
  *
- *  CAN2:
- *    PB5, PB6
+ *  GPIO: B0-B11
+ *  OUT: C0-C15
+ *  CAN1: PD0, PD1
+ *  USB: PA9, PA11, PA12
+ *
+ *  Custom PWM:
+ *    TIM10 PB8
+ *    TIM11 PB9
+ *    TIM13 PA6
+ *    TIM14 PA7
+ *  Fixed PWM:
+ *    TIM3 PB0
+ *    TIM3 PB1
+ *    TIM3 PB2
+ *    TIM3 PB3
  *
  *  USB:
  *    PA9, PA11, PA12
@@ -58,20 +72,10 @@
  *    TIM14 PA7
  *
  *  TLC2543 or ADC7888 on SPI2 (PB12-15) CS, SCK, MISO, MOSI
- *    - Uses TIM6 dma1 stream 1 chan 7 to trigger DMA at about 50 khz for 10
- *     inputs
+ *    - Uses TIM7 dma1 stream 2 chan 1 to trigger DMA at about 50 khz for 10
+ *      inputs
  *    - RX uses SPI2 dma1 stream 3 chan 0
  *    - On end of RX dma, trigger interrupt
- *
- *  Configurable pin mapping:
- *  Scheduled Outputs:
- *   - 0-15 maps to port D, pins 0-15
- *  Freq sensor:
- *   - 1-4 maps to port A, pin 8-11 (TIM1 CH1-4)
- *  PWM Outputs
- *   - 0-PC6  1-PC7 2-PC8 3-PC9 TIM3 channel 1-4
- *  GPIO (Digital Sensor or Output)
- *   - 0-15 Maps to Port E
  *
  */
 
