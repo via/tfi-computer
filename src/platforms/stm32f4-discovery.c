@@ -59,17 +59,11 @@
  *  Fixed PWM:
  *    TIM3 PB0
  *    TIM3 PB1
- *    TIM3 PB2
- *    TIM3 PB3
+ *    TIM3 PB4
+ *    TIM3 PB5
  *
  *  USB:
  *    PA9, PA11, PA12
- *
- *  Freq:
- *    TIM10 PB8
- *    TIM11 PB9
- *    TIM13 PA6
- *    TIM14 PA7
  *
  *  TLC2543 or ADC7888 on SPI2 (PB12-15) CS, SCK, MISO, MOSI
  *    - Uses TIM7 dma1 stream 2 chan 1 to trigger DMA at about 50 khz for 10
@@ -317,16 +311,16 @@ int current_output_slot() {
   return output_buffer_len - DMA2_S1NDTR;
 }
 
-static void platform_init_pwm() {
 
-  gpio_mode_setup(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO6);
-  gpio_mode_setup(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO7);
-  gpio_mode_setup(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO8);
-  gpio_mode_setup(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9);
-  gpio_set_af(GPIOC, GPIO_AF2, GPIO6);
-  gpio_set_af(GPIOC, GPIO_AF2, GPIO7);
-  gpio_set_af(GPIOC, GPIO_AF2, GPIO8);
-  gpio_set_af(GPIOC, GPIO_AF2, GPIO9);
+static void platform_init_fixed_pwm() {
+  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO0);
+  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO1);
+  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO4);
+  gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO5);
+  gpio_set_af(GPIOB, GPIO_AF2, GPIO0);
+  gpio_set_af(GPIOB, GPIO_AF2, GPIO1);
+  gpio_set_af(GPIOB, GPIO_AF2, GPIO4);
+  gpio_set_af(GPIOB, GPIO_AF2, GPIO5);
 
   timer_disable_oc_output(TIM3, TIM_OC1);
   timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
@@ -372,6 +366,10 @@ static void platform_init_pwm() {
   timer_set_oc_polarity_high(TIM3, TIM_OC4);
   timer_enable_oc_output(TIM3, TIM_OC4);
   timer_enable_counter(TIM3);
+}
+
+static void platform_init_custom_pwm() {
+
 
 }
 
@@ -379,13 +377,29 @@ void set_pwm(int output, float value) {
   int ival = value * 65535;
   switch (output) {
     case 1:
-      return timer_set_oc_value(TIM3, TIM_OC1, ival);
+      timer_set_oc_value(TIM10, TIM_OC1, ival);
+      break;
     case 2:
-      return timer_set_oc_value(TIM3, TIM_OC2, ival);
+      timer_set_oc_value(TIM11, TIM_OC1, ival);
+      break;
     case 3:
-      return timer_set_oc_value(TIM3, TIM_OC3, ival);
+      timer_set_oc_value(TIM13, TIM_OC1, ival);
+      break;
     case 4:
-      return timer_set_oc_value(TIM3, TIM_OC4, ival);
+      timer_set_oc_value(TIM14, TIM_OC1, ival);
+      break;
+    case 5:
+      timer_set_oc_value(TIM3, TIM_OC1, ival);
+      break;
+    case 6:
+      timer_set_oc_value(TIM3, TIM_OC2, ival);
+      break;
+    case 7:
+      timer_set_oc_value(TIM3, TIM_OC3, ival);
+      break;
+    case 8:
+      timer_set_oc_value(TIM3, TIM_OC4, ival);
+      break;
   }
 }
 
