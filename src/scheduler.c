@@ -308,6 +308,9 @@ static int schedule_ignition_event(struct output_event *ev,
   timeval_t start_time;
   degrees_t firing_angle;
 
+  float bleh = (current_time() % time_from_us(30000000)) / time_from_us(30000000);
+  advance = 22.0 - (5 * bleh);
+
   if (!d->rpm || !config.decoder.valid) {
     return 0;
   }

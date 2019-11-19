@@ -1263,13 +1263,13 @@ static int console_output_events() {
     switch (ev.type) {
     case EVENT_OUTPUT:
       sprintf(tempbuf,
-              "# OUTPUTS %lu %2x\r\n",
+              "# OUTPUTS %lu %4x\r\n",
               (unsigned long)ev.time,
               ev.value);
       break;
     case EVENT_GPIO:
       sprintf(tempbuf,
-              "# GPIO %lu %2x\r\n",
+              "# GPIO %lu %4x\r\n",
               (unsigned long)ev.time,
               ev.value);
       break;

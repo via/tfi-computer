@@ -405,9 +405,17 @@ void platform_enable_event_logging() {
   nvic_enable_irq(NVIC_EXTI9_5_IRQ);
   nvic_enable_irq(NVIC_EXTI15_10_IRQ);
 
-  exti_select_source(0xFF, GPIOD);
-  exti_set_trigger(0xFF, EXTI_TRIGGER_BOTH);
-  exti_enable_request(0xFF);
+  nvic_set_priority(NVIC_EXTI0_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI1_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI2_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI3_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI4_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI9_5_IRQ, 48);
+  nvic_set_priority(NVIC_EXTI15_10_IRQ, 48);
+
+  exti_select_source(0xFFFF, GPIOD);
+  exti_set_trigger(0xFFFF, EXTI_TRIGGER_BOTH);
+  exti_enable_request(0xFFFF);
 }
 
 void platform_disable_event_logging() {
@@ -421,7 +429,7 @@ void platform_disable_event_logging() {
 }
 
 static void show_scheduled_outputs() {
-  uint32_t flag_changes = exti_get_flag_status(0xFF);
+  uint32_t flag_changes = exti_get_flag_status(0xFFFF);
   console_record_event((struct logged_event){
     .type = EVENT_OUTPUT,
     .time = current_time(),
@@ -965,6 +973,7 @@ void dma1_stream3_isr(void) {
  * e.g. console).
  */
 void tim2_isr() {
+  static int count = 0;
   stats_increment_counter(STATS_INT_RATE);
   stats_increment_counter(STATS_INT_EVENTTIMER_RATE);
   stats_start_timing(STATS_INT_TOTAL_TIME);
@@ -990,6 +999,12 @@ void tim2_isr() {
       timer_clear_flag(TIM2, TIM_SR_CC2IF);
       struct decoder_event ev = { .t0 = 1, .time = TIM2_CCR2 };
       decoder_update_scheduling(&ev, 1);
+      count++;
+      if (count == 24) {
+        count = 0;
+        ev = (struct decoder_event){ .t1 = 1, .time = current_time() };
+        decoder_update_scheduling(&ev, 1);
+      }
     }
     if (timer_get_flag(TIM2, TIM_SR_CC3IF)) {
       timer_clear_flag(TIM2, TIM_SR_CC3IF);
