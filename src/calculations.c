@@ -139,8 +139,7 @@ void calculate_fueling() {
   float tpsrate = config.sensors[SENSOR_TPS].derivative;
 
   if (config.ve) {
-    float load = map / aap * 100.0;
-    ve = interpolate_table_twoaxis(config.ve, config.decoder.rpm, load);
+    ve = interpolate_table_twoaxis(config.ve, config.decoder.rpm, map);
   } else {
     ve = 100.0;
   }
