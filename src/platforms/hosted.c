@@ -233,7 +233,7 @@ static void hosted_platform_timer(int sig, siginfo_t *info, void *ucontext) {
 
   int failing = 0; // (current_time() % 1000000) > 500000;
   if (current_time() % 1000 == 0) {
-    // test_trigger_rpm += 1;
+    test_trigger_rpm += 1;
     if (test_trigger_rpm > 9000) {
       test_trigger_rpm = 800;
     }

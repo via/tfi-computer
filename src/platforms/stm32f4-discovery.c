@@ -766,6 +766,8 @@ static struct {
 } test_trigger_config;
 
 void tim5_isr() {
+  test_trigger_config.rpm += 1;
+  if (test_trigger_config.rpm > 7000) test_trigger_config.rpm = 1000;
   if (timer_get_flag(TIM5, TIM_SR_CC1IF)) {
     timer_clear_flag(TIM5, TIM_SR_CC1IF);
   }
