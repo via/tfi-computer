@@ -24,7 +24,7 @@ static int n_callbacks = 0;
 
 static int sched_entry_has_fired(struct sched_entry *en) {
   int ret = 0;
-  int ints_on = disable_interrupts();
+  disable_interrupts();
   if (en && en->buffer) {
     if (time_in_range(en->time, en->buffer->start, current_time())) {
       ret = 1;
@@ -33,9 +33,7 @@ static int sched_entry_has_fired(struct sched_entry *en) {
   if (en->fired) {
     ret = 1;
   }
-  if (ints_on) {
-    enable_interrupts();
-  }
+  enable_interrupts();
   return ret;
 }
 
@@ -167,7 +165,7 @@ static void sched_entry_off(struct sched_entry *en) {
 }
 
 void deschedule_event(struct output_event *ev) {
-  int ints_en = disable_interrupts();
+  disable_interrupts();
 
   if (ev->start.fired) {
     enable_interrupts();
@@ -182,9 +180,7 @@ void deschedule_event(struct output_event *ev) {
     sched_entry_off(&ev->start);
     sched_entry_off(&ev->stop);
   }
-  if (ints_en) {
-    enable_interrupts();
-  }
+  enable_interrupts();
 }
 
 void invalidate_scheduled_events(struct output_event *evs, int n) {
@@ -242,7 +238,7 @@ void schedule_output_event_safely(struct output_event *ev,
   ev->stop.val = ev->inverted ? 1 : 0;
 
   if (!ev->start.scheduled && !ev->stop.scheduled) {
-    int ints_on = disable_interrupts();
+    disable_interrupts();
     if (sched_entry_enable(&ev->stop, newstop)) {
       sched_entry_update(&ev->stop, newstop);
       if (sched_entry_enable(&ev->start, newstart)) {
@@ -254,14 +250,12 @@ void schedule_output_event_safely(struct output_event *ev,
         sched_entry_off(&ev->stop);
       }
     }
-    if (ints_on) {
-      enable_interrupts();
-    }
+    enable_interrupts();
     stats_finish_timing(STATS_SCHED_SINGLE_TIME);
     return;
   }
 
-  int ints_on = disable_interrupts();
+  disable_interrupts();
   if (oldstart == newstart) {
     if (time_before(ev->start.time, newstop) || preserve_duration) {
       reschedule_end(&ev->stop, oldstop, newstop);
@@ -293,9 +287,7 @@ void schedule_output_event_safely(struct output_event *ev,
     }
   }
 
-  if (ints_on) {
-    enable_interrupts();
-  }
+  enable_interrupts();
   stats_finish_timing(STATS_SCHED_SINGLE_TIME);
 }
 
@@ -497,7 +489,7 @@ static void callback_insert(struct timed_callback *tcb) {
 
 int schedule_callback(struct timed_callback *tcb, timeval_t time) {
 
-  int ints_on = disable_interrupts();
+  disable_interrupts();
   if (tcb->scheduled) {
     callback_remove(tcb);
   }
@@ -513,9 +505,7 @@ int schedule_callback(struct timed_callback *tcb, timeval_t time) {
       scheduler_callback_timer_execute();
     }
   }
-  if (ints_on) {
-    enable_interrupts();
-  }
+  enable_interrupts();
 
   return 0;
 }
