@@ -23,6 +23,8 @@ LDFLAGS+= -T platforms/stm32f4-discovery.ld -nostartfiles
 .elif ${PLATFORM} == "hosted3"
 CC=gcc
 CFLAGS+= -I. -std=c99 -Wall -O0 -ggdb -lm -lrt -lpthread
+CFLAGS+= -I/home/via/dev/tinycbor/src 
+LDFLAGS+= -L/home/via/dev/tinycbor/lib -l:libtinycbor.a
 CFLAGS+= -D TICKRATE=4000000 -D_POSIX_C_SOURCE=199309L -D_GNU_SOURCE
 CFLAGS+= -fsanitize=undefined -fsanitize=address -DGIT_DESCRIBE=\"${GITDESC}\"
 

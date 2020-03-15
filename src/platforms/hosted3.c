@@ -19,6 +19,8 @@
 
 #include "hosted3.h"
 
+#include "cbor.h"
+
 _Atomic static timeval_t curtime;
 
 _Atomic static timeval_t eventtimer_time;
@@ -146,12 +148,12 @@ size_t console_write(const void *buf, size_t len) {
     return 0;
   }
   struct timespec wait = {
-    .tv_nsec = 20000,
+    .tv_nsec = 2000,
   };
   nanosleep(&wait, NULL);
   ssize_t written = -1;
-  while ((written = write(STDOUT_FILENO, buf, len)) < 0)
-    ;
+//  while ((written = write(STDOUT_FILENO, buf, len)) < 0)
+//    ;
   if (written > 0) {
     last_tx = curtime;
     return written;
@@ -189,95 +191,6 @@ int current_output_slot() {
 void set_test_trigger_rpm(unsigned int rpm) {
   test_trigger_rpm = rpm;
 }
-
-#if 0
-static void hosted_platform_timer(int sig, siginfo_t *info, void *ucontext) {
-  /* - Increase "time"
-   * - Trigger appropriate interrupts
-   *     timer event
-   *     input event
-   *     dma buffer swap
-   *
-   * - Set outputs from buffer
-   */
-
-  stats_increment_counter(STATS_INT_RATE);
-  stats_start_timing(STATS_INT_TOTAL_TIME);
-
-  if (!output_slots[0]) {
-    /* Not initialized */
-    return;
-  }
-
-  int failing = 0; // (current_time() % 1000000) > 500000;
-  if (current_time() % 1000 == 0) {
-    // test_trigger_rpm += 1;
-    if (test_trigger_rpm > 9000) {
-      test_trigger_rpm = 800;
-    }
-  }
-  if (test_trigger_rpm && !failing) {
-    timeval_t time_between = time_from_rpm_diff(test_trigger_rpm, 30);
-    static uint32_t trigger_count = 0;
-    if (curtime >= test_trigger_last + time_between) {
-      test_trigger_last = curtime;
-      struct decoder_event ev = { .t0 = 1, .time = curtime };
-      decoder_update_scheduling(&ev, 1);
-      trigger_count++;
-
-      if ((config.decoder.type == TOYOTA_24_1_CAS) &&
-          (trigger_count >= config.decoder.num_triggers)) {
-        trigger_count = 0;
-        struct decoder_event ev = { .t1 = 1, .time = curtime };
-        decoder_update_scheduling(&ev, 1);
-      }
-    }
-  }
-
-  static uint16_t old_outputs = 0;
-  curtime++;
-  cur_slot++;
-  if (cur_slot == max_slots) {
-    cur_buffer = (cur_buffer + 1) % 2;
-    cur_slot = 0;
-    stats_start_timing(STATS_INT_BUFFERSWAP_TIME);
-    scheduler_buffer_swap();
-    stats_finish_timing(STATS_INT_BUFFERSWAP_TIME);
-  }
-
-  cur_outputs |= output_slots[cur_buffer][cur_slot].on_mask;
-  cur_outputs &= ~output_slots[cur_buffer][cur_slot].off_mask;
-
-  if (cur_outputs != old_outputs) {
-    console_record_event((struct logged_event){
-      .time = curtime,
-      .value = cur_outputs,
-      .type = EVENT_OUTPUT,
-    });
-    old_outputs = cur_outputs;
-  }
-
-  /* poll for command input */
-  struct pollfd pfds[] = {
-    { .fd = STDIN_FILENO, .events = POLLIN },
-  };
-  if (!rx_amt && poll(pfds, 1, 0)) {
-    ssize_t r = read(STDIN_FILENO, rx_buffer, 127);
-    if (r > 0) {
-      rx_amt = r;
-    }
-  }
-
-  if (eventtimer_enable && (eventtimer_time + 1 == curtime)) {
-    scheduler_callback_timer_execute();
-  }
-
-  sensors_process(SENSOR_ADC);
-  sensors_process(SENSOR_FREQ);
-
-  stats_finish_timing(STATS_INT_TOTAL_TIME);
-}
-#endif
 
 static struct timespec add_times(struct timespec a, struct timespec b) {
   struct timespec ret = a;
@@ -375,6 +288,26 @@ void *platform_interrupt_thread(void *_interrupt_fd) {
 
 }
 
+static void send_output_event(struct event ev, int fd) {
+
+  uint8_t buf[128];
+  CborEncoder encoder;
+  cbor_encoder_init(&encoder, buf, sizeof(buf), 0);
+
+  CborEncoder map;
+  cbor_encoder_create_map(&encoder, &map, 3);
+  cbor_encode_text_stringz(&map, "time");
+  cbor_encode_uint(&map, ev.time);
+
+  cbor_encode_text_stringz(&map, "values");
+  cbor_encode_uint(&map, ev.values);
+
+  cbor_encode_text_stringz(&map, "type");
+  cbor_encode_uint(&map, ev.type);
+
+  cbor_encoder_close_container(&encoder, &map);
+  write(fd, buf, cbor_encoder_get_buffer_size(&encoder, buf));
+}
 
 static void do_output_slots() {
   static uint16_t old_outputs = 0;
@@ -408,7 +341,9 @@ static void do_output_slots() {
       .time = curtime,
       .values = cur_outputs,
     };
+
     mq_send(output_queue, (const char *)&msg, sizeof(msg), 0);
+    send_output_event(msg, STDOUT_FILENO);
     console_record_event((struct logged_event){
       .time = curtime,
       .value = cur_outputs,
