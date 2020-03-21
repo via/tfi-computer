@@ -56,22 +56,22 @@ void calculate_ignition() {
 }
 
 static float air_density(float iat_celsius, float atmos_kpa) {
-  const float kelvin_offset = 273.15;
+  const float kelvin_offset = 273.15f;
   float temp_factor = kelvin_offset / (iat_celsius + kelvin_offset);
-  return (atmos_kpa / 100) * config.fueling.density_of_air_stp * temp_factor;
+  return (atmos_kpa / 100.0f) * config.fueling.density_of_air_stp * temp_factor;
 }
 
 static float fuel_density(float fuel_celsius) {
-  const float beta = 950.0; /* Gasoline 10^-6/K */
-  float delta_temp = fuel_celsius - 15.0;
-  return config.fueling.density_of_fuel - (delta_temp * beta / 1000000.0);
+  const float beta = 950.0f; /* Gasoline 10^-6/K */
+  float delta_temp = fuel_celsius - 15.0f;
+  return config.fueling.density_of_fuel - (delta_temp * beta / 1000000.0f);
 }
 
 /* Returns mass of air injested into a cylinder */
 static float calculate_airmass(float ve, float map, float aap, float iat) {
 
   float injested_air_volume_per_cycle =
-    (ve / 100.0) * (map / aap) * config.fueling.cylinder_cc;
+    (ve / 100.0f) * (map / aap) * config.fueling.cylinder_cc;
 
   float injested_air_mass_per_cycle =
     injested_air_volume_per_cycle * air_density(iat, aap);
@@ -115,7 +115,7 @@ static float calculate_tipin_enrichment(float tps, float tpsrate, int rpm) {
     /* Overwrite our event */
     current.time = current_time();
     current.length = time_from_us(
-      interpolate_table_oneaxis(config.tipin_enrich_duration, rpm) * 1000);
+      interpolate_table_oneaxis(config.tipin_enrich_duration, rpm) * 1000.f);
     current.amount = new_tipin_amount;
     current.active = 1;
   }
@@ -142,29 +142,29 @@ void calculate_fueling() {
   float tpsrate = config.sensors[SENSOR_TPS].derivative.value;
 
   if (config.ve) {
-    float load = map / aap * 100.0;
+    float load = map / aap * 100.0f;
     ve = interpolate_table_twoaxis(config.ve, config.decoder.rpm, load);
   } else {
-    ve = 100.0;
+    ve = 100.0f;
   }
 
   if (config.commanded_lambda) {
     lambda = interpolate_table_twoaxis(
       config.commanded_lambda, config.decoder.rpm, map);
   } else {
-    lambda = 1.0;
+    lambda = 1.0f;
   }
 
   if (config.injector_pw_compensation) {
     idt = interpolate_table_oneaxis(config.injector_pw_compensation, brv);
   } else {
-    idt = 1.0;
+    idt = 1.0f;
   }
 
   if (config.engine_temp_enrich) {
     ete = interpolate_table_twoaxis(config.engine_temp_enrich, clt, map);
   } else {
-    ete = 1.0;
+    ete = 1.0f;
   }
 
   /* Cranking enrichment config overrides ETE */
@@ -185,16 +185,16 @@ void calculate_fueling() {
 
   float raw_pw_us =
     (calculated_values.fuelvol_per_cycle +
-     (calculated_values.tipin / 1000)) / /* Tipin unit is mm^3 */
+     (calculated_values.tipin / 1000.0f)) / /* Tipin unit is mm^3 */
     config.fueling.injector_cc_per_minute *
-    60000000 /                           /* uS per minute */
+    60000000.0f /                           /* uS per minute */
     config.fueling.injections_per_cycle; /* This many pulses */
 
   calculated_values.ete = ete;
   calculated_values.idt = idt;
   calculated_values.ve = ve;
   calculated_values.lambda = lambda;
-  calculated_values.fueling_us = (raw_pw_us * ete) + (idt * 1000);
+  calculated_values.fueling_us = (raw_pw_us * ete) + (idt * 1000.0f);
 
   stats_finish_timing(STATS_FUELCALC_TIME);
 }

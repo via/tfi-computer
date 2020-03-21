@@ -85,7 +85,7 @@ void stats_init(timeval_t ticks) {
 }
 
 static void stats_update(stats_field_t type, timeval_t val) {
-
+#if STATS_REPORTING
   if (val < stats_entries[type].min) {
     stats_entries[type].min = val;
   }
@@ -103,22 +103,28 @@ static void stats_update(stats_field_t type, timeval_t val) {
                     stats_entries[type]._prev[2] +
                     stats_entries[type]._prev[1] + stats_entries[type]._prev[0];
   stats_entries[type].avg = total / 4;
+#endif
 }
 
 void stats_start_timing(stats_field_t type) {
+#if STATS_REPORTING
   stats_entries[type]._window = cycle_count();
+#endif
 }
 
 void stats_finish_timing(stats_field_t type) {
+#if STATS_REPORTING
 
   timeval_t time;
   time = cycle_count();
   time -= stats_entries[type]._window;
 
   stats_update(type, time / (ticks_per_sec / 1000000));
+#endif
 }
 
 void stats_increment_counter(stats_field_t type) {
+#if STATS_REPORTING
 
   if (cycle_count() - stats_entries[type]._window > ticks_per_sec) {
     /* We've reached the window edge, calculate and reset */
@@ -127,4 +133,5 @@ void stats_increment_counter(stats_field_t type) {
     stats_entries[type]._window = cycle_count();
   }
   stats_entries[type].counter++;
+#endif
 }

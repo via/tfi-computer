@@ -591,7 +591,7 @@ static void platform_init_spi_adc() {
   dma_enable_stream(DMA1, DMA_STREAM3);
 
   nvic_enable_irq(NVIC_DMA1_STREAM3_IRQ);
-  nvic_set_priority(NVIC_DMA1_STREAM3_IRQ, 64);
+  nvic_set_priority(NVIC_DMA1_STREAM3_IRQ, 0);
 
   /* Configure TIM7 to drive DMA for SPI */
   timer_set_mode(TIM7, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
@@ -966,6 +966,7 @@ void dma1_stream3_isr(void) {
   if (!dma_get_interrupt_flag(DMA1, DMA_STREAM3, DMA_TCIF)) {
     return;
   }
+  gpio_set(GPIOE, GPIO3);
   dma_clear_interrupt_flags(DMA1, DMA_STREAM3, DMA_TCIF);
 
   /* CS high */
@@ -988,7 +989,7 @@ void dma1_stream3_isr(void) {
 #ifdef SPI_TLC2543
       adc_value >>= 4; /* 12 bit value is left justified */
 #endif
-      config.sensors[i].raw_value = adc_value;
+      config.sensors[i].raw_value = 1500;// adc_value;
     } else if (config.sensors[i].source == SENSOR_FREQ) {
       uint8_t pin = config.sensors[i].pin;
       if (pin > 3) {
@@ -1016,6 +1017,7 @@ void dma1_stream3_isr(void) {
   sensors_process(SENSOR_FREQ);
 
   start_adc_sampling();
+  gpio_clear(GPIOE, GPIO3);
 }
 
 static int freq_input_peek(struct decoder_event *ev, uint8_t pin) {
