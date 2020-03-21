@@ -13,6 +13,7 @@ typedef enum {
   SENSOR_AAP, /* Atmospheric Absolute Pressure */
   SENSOR_FRT, /* Fuel Rail Temperature */
   SENSOR_EGO, /* Exhaust Gas Oxygen */
+  SENSOR_SPD, /* Vehicle Speed */
   NUM_SENSORS,
 } sensor_input_type;
 

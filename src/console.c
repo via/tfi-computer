@@ -1024,6 +1024,10 @@ static struct console_config_node console_config_nodes[] = {
     .val = &config.sensors[SENSOR_EGO],
     .get = console_get_sensor,
     .set = console_set_sensor },
+  { .name = "config.sensors.spd",
+    .val = &config.sensors[SENSOR_SPD],
+    .get = console_get_sensor,
+    .set = console_set_sensor },
 
   { .name = "config.events",
     .get = console_get_events,
@@ -1165,6 +1169,12 @@ static struct console_config_node console_config_nodes[] = {
   { .name = "status.sensors.ego.fault",
     .val = &config.sensors[SENSOR_EGO].fault,
     .get = console_get_sensor_fault },
+  { .name = "status.sensors.spd",
+    .val = &config.sensors[SENSOR_SPD].processed_value,
+    .get = console_get_float },
+  { .name = "status.sensors.spd.fault",
+    .val = &config.sensors[SENSOR_SPD].fault,
+    .get = console_get_sensor_fault },
 
   /* Misc commands */
   { .name = "flash", .set = console_save_to_flash },
@@ -1264,6 +1274,7 @@ void console_init() {
     "status.sensors.iat",
     "status.sensors.clt",
     "status.sensors.ego",
+    "status.sensors.spd",
     NULL,
   };
 

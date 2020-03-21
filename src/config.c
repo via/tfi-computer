@@ -251,6 +251,8 @@ struct config config __attribute__((section(".configdata"))) = {
       .params={.range={.min=-15.74, .max=145.47}},
       .fault_config={.min = 200, .max = 3200, .fault_value = 25.0},
       .lag = 10.0},
+    [SENSOR_SPD] = {.pin=2, .source=SENSOR_FREQ, .method=METHOD_LINEAR,
+      .params={.range={.min=0, .max=4096.0f}}},
     [SENSOR_FRT] = {.source=SENSOR_CONST, .params={.fixed_value = 15.0}},
   },
   .timing = &timing_vs_rpm_and_map,
