@@ -119,14 +119,6 @@ static size_t freq_input_position(uint8_t pin) {
   }
 }
 
-static void freq_input_increment_read(uint8_t pin) {
-  if (pin > (FREQ_INPUTS - 1)) {
-    return;
-  }
-  freq_input_buffers[pin].read_pos =
-    (freq_input_buffers[pin].read_pos + 1) % FREQ_INPUT_SAMPLES;
-}
-
 static void platform_enable_freq_dma(uint8_t pin) {
   uint8_t stream;
   uint32_t channel;
@@ -1059,61 +1051,6 @@ void dma1_stream3_isr(void) {
   start_adc_sampling();
 }
 
-static int freq_input_peek(struct decoder_event *ev, uint8_t pin) {
-  assert(pin < FREQ_INPUTS);
-  if ((config.freq_inputs[pin].type == TRIGGER) &&
-      (freq_input_buffers[pin].read_pos != freq_input_position(pin))) {
-    *ev = (struct decoder_event){
-      .time = freq_input_buffers[pin].buffer[freq_input_buffers[pin].read_pos],
-      .trigger = pin,
-    };
-    return 1;
-  }
-  return 0;
-}
-
-static int fetch_next_trigger(struct decoder_event *result) {
-  struct decoder_event pin0, pin1;
-
-  int pin0_avail = freq_input_peek(&pin0, 0);
-  int pin1_avail = freq_input_peek(&pin1, 1);
-
-  if (pin0_avail && pin1_avail) {
-    if (time_in_range(pin1.time, pin0.time, current_time())) {
-      *result = pin0;
-      freq_input_increment_read(0);
-      return 1;
-    } else {
-      *result = pin1;
-      freq_input_increment_read(1);
-      return 1;
-    }
-  } else if (pin0_avail) {
-    *result = pin0;
-    freq_input_increment_read(0);
-    return 1;
-  } else if (pin1_avail) {
-    *result = pin1;
-    freq_input_increment_read(1);
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-static void walk_trigger_buffers() {
-  struct decoder_event events[32] = { 0 };
-  int n_events = 0;
-  while (fetch_next_trigger(&events[n_events])) {
-    n_events++;
-    if (n_events > FREQ_INPUT_SAMPLES - 1) {
-      break;
-      /* TODO when stats supports counters, increment here */
-    }
-  }
-  decoder_update_scheduling(events, n_events);
-}
-
 static struct {
   uint32_t current_tooth;
   uint32_t missing_tooth;
@@ -1209,15 +1146,46 @@ void tim2_isr() {
   stats_increment_counter(STATS_INT_EVENTTIMER_RATE);
   stats_start_timing(STATS_INT_TOTAL_TIME);
 
+  struct decoder_event evs[2];
+  int n_events = 0;
+  bool cc1_fired = false;
+  bool cc2_fired = false;
+  timeval_t cc1;
+  timeval_t cc2;
+
   if (timer_get_flag(TIM2, TIM_SR_CC1IF)) {
+    cc1_fired = true;
+    cc1 = TIM2_CCR1;
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
   }
+
   if (timer_get_flag(TIM2, TIM_SR_CC2IF)) {
+    cc2_fired = true;
+    cc2 = TIM2_CCR2;
     timer_clear_flag(TIM2, TIM_SR_CC2IF);
   }
 
-  walk_trigger_buffers();
 
+  if (cc1_fired && cc2_fired) {
+		if (time_in_range(cc1, cc2, current_time())) {
+			evs[0] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
+			evs[1] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
+			n_events = 2;
+		} else {
+			evs[0] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
+			evs[1] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
+			n_events = 2;
+		}
+	} else if (cc1_fired) {
+		evs[0] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
+		n_events = 1;
+	} else if (cc2_fired) {
+		evs[0] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
+		n_events = 1;
+	}
+  if (n_events > 0) {
+		decoder_update_scheduling(evs, n_events);
+	}
   stats_finish_timing(STATS_INT_TOTAL_TIME);
 }
 

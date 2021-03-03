@@ -210,7 +210,7 @@ static void missing_tooth_trigger_update(struct decoder *d, timeval_t t) {
       d->last_trigger_angle -= 720;
     }
   }
-  if (d->state != DECODER_NOSYNC) {
+  if (d->state != DECODER_NOSYNC && config.decoder.rpm > 80) {
     /* Are we expecting this to be the gap? */
     degrees_t expected_gap =
       d->degrees_per_trigger *
@@ -218,7 +218,7 @@ static void missing_tooth_trigger_update(struct decoder *d, timeval_t t) {
     timeval_t expected_time = time_from_rpm_diff(d->rpm, expected_gap);
     d->expiration =
       d->times[0] +
-      (timeval_t)(expected_time * (1.0f + d->trigger_max_rpm_change));
+      (timeval_t)(expected_time * (2.0f + d->trigger_max_rpm_change));
     set_expire_event(d->expiration);
   }
 }
