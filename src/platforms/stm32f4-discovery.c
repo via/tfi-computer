@@ -192,16 +192,16 @@ static void platform_setup_tim2() {
   timer_ic_set_polarity(
     TIM2, TIM_IC1, capture_edge_from_config(config.freq_inputs[0].edge));
   timer_ic_enable(TIM2, TIM_IC1);
-  TIM2_DIER |= TIM_DIER_CC1DE;
-  platform_enable_freq_dma(0);
+  //TIM2_DIER |= TIM_DIER_CC1DE;
+//  platform_enable_freq_dma(0);
 
   timer_ic_set_input(TIM2, TIM_IC2, TIM_IC_IN_TI2);
   timer_ic_set_filter(TIM2, TIM_IC2, TIM_IC_CK_INT_N_2);
   timer_ic_set_polarity(
     TIM2, TIM_IC2, capture_edge_from_config(config.freq_inputs[1].edge));
   timer_ic_enable(TIM2, TIM_IC2);
-  TIM2_DIER |= TIM_DIER_CC2DE;
-  platform_enable_freq_dma(1);
+ // TIM2_DIER |= TIM_DIER_CC2DE;
+//  platform_enable_freq_dma(1);
 
   timer_enable_counter(TIM2);
 }
@@ -1165,27 +1165,26 @@ void tim2_isr() {
     timer_clear_flag(TIM2, TIM_SR_CC2IF);
   }
 
-
   if (cc1_fired && cc2_fired) {
-		if (time_in_range(cc1, cc2, current_time())) {
-			evs[0] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
-			evs[1] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
-			n_events = 2;
-		} else {
-			evs[0] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
-			evs[1] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
-			n_events = 2;
-		}
-	} else if (cc1_fired) {
-		evs[0] = (struct decoder_event){ .trigger = 0, .time = TIM2_CCR1 };
-		n_events = 1;
-	} else if (cc2_fired) {
-		evs[0] = (struct decoder_event){ .trigger = 1, .time = TIM2_CCR2 };
-		n_events = 1;
-	}
+    if (time_in_range(cc1, cc2, current_time())) {
+      evs[0] = (struct decoder_event){ .trigger = 1, .time = cc2 };
+      evs[1] = (struct decoder_event){ .trigger = 0, .time = cc1 };
+      n_events = 2;
+    } else {
+      evs[0] = (struct decoder_event){ .trigger = 0, .time = cc1 };
+      evs[1] = (struct decoder_event){ .trigger = 1, .time = cc2 };
+      n_events = 2;
+    }
+  } else if (cc1_fired) {
+    evs[0] = (struct decoder_event){ .trigger = 0, .time = cc1 };
+    n_events = 1;
+  } else if (cc2_fired) {
+    evs[0] = (struct decoder_event){ .trigger = 1, .time = cc2 };
+    n_events = 1;
+  }
   if (n_events > 0) {
-		decoder_update_scheduling(evs, n_events);
-	}
+    decoder_update_scheduling(&evs[0], n_events);
+  }
   stats_finish_timing(STATS_INT_TOTAL_TIME);
 }
 
