@@ -32,10 +32,11 @@ static float sensor_convert_linear_windowed(struct sensor_input *in,
 
   float result = in->processed_value;
 
+  degrees_t current_width = clamp_angle(angle - in->window.collection_start_angle, 720);
   /* If not in a window, or we have exceeded a window size */
   if (!current_angle_in_window(in, angle) ||
-      clamp_angle(angle - in->window.collection_start_angle, 720) >=
-        in->window.capture_width) {
+      ((current_width < in->window.capture_width * 2) && 
+       (current_width >= in->window.capture_width))) {
 
     if (in->window.collecting && in->window.samples) {
       in->window.collecting = 0;
