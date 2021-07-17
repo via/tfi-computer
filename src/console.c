@@ -900,16 +900,16 @@ static void render_decoder(struct console_request_context *ctx, void *ptr) {
     ctx, "min-rpm", "minimum RPM for sync", &config.decoder.trigger_min_rpm);
 
   int type = config.decoder.type;
-  render_enum_map_field(
-    ctx,
-    "trigger-type",
-    "Primary trigger decoder method",
-    (struct console_enum_mapping[]){ { TRIGGER_EVEN_NOSYNC, "even" },
-                                     { TRIGGER_EVEN_CAMSYNC, "even+camsync" },
-                                     { TRIGGER_MISSING_NOSYNC, "missing" },
-                                     { TRIGGER_MISSING_CAMSYNC, "missing+camsync" },
-                                     { 0, NULL } },
-    &type);
+  render_enum_map_field(ctx,
+                        "trigger-type",
+                        "Primary trigger decoder method",
+                        (struct console_enum_mapping[]){
+                          { TRIGGER_EVEN_NOSYNC, "even" },
+                          { TRIGGER_EVEN_CAMSYNC, "even+camsync" },
+                          { TRIGGER_MISSING_NOSYNC, "missing" },
+                          { TRIGGER_MISSING_CAMSYNC, "missing+camsync" },
+                          { 0, NULL } },
+                        &type);
   config.decoder.type = type;
 }
 
