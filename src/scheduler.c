@@ -345,36 +345,42 @@ void scheduler_callback_timer_execute() {
 
 void scheduler_output_buffer_fired(struct output_buffer *buf) {
   struct output_event *oev;
-  int i;
-  for (i = 0; i < MAX_EVENTS; ++i) {
+  for (int i = 0; i < MAX_EVENTS; ++i) {
     oev = &config.events[i];
+    sched_state_t start_state = atomic_load_explicit(&oev->start.state, memory_order_relaxed);
+    sched_state_t stop_state = atomic_load_explicit(&oev->stop.state, memory_order_relaxed);
 
-    if (oev->start.state == SCHED_SUBMITTED &&
+    if (start_state == SCHED_SUBMITTED &&
         time_in_range(oev->start.time, buf->first_time, buf->last_time)) {
-      oev->start.state = SCHED_FIRED;
+//	    platform_output_buffer_unset(buf, &oev->start);
+      atomic_store_explicit(&oev->start.state, SCHED_FIRED, memory_order_relaxed);
     }
-    if (oev->stop.state == SCHED_SUBMITTED &&
+    if (stop_state == SCHED_SUBMITTED &&
         time_in_range(oev->stop.time, buf->first_time, buf->last_time)) {
-      oev->stop.state = SCHED_FIRED;
+//	    platform_output_buffer_unset(buf, &oev->stop);
+      atomic_store_explicit(&oev->stop.state, SCHED_FIRED, memory_order_relaxed);
     }
   }
 }
 
 void scheduler_output_buffer_ready(struct output_buffer *buf) {
   struct output_event *oev;
-  int i;
-  for (i = 0; i < MAX_EVENTS; ++i) {
+  for (int i = 0; i < MAX_EVENTS; ++i) {
     oev = &config.events[i];
+    sched_state_t start_state = atomic_load_explicit(&oev->start.state, memory_order_relaxed);
+    sched_state_t stop_state = atomic_load_explicit(&oev->stop.state, memory_order_relaxed);
+
     /* Is this an event that is scheduled for this time window? */
-    if (oev->start.state == SCHED_SCHEDULED &&
-        time_in_range(oev->start.time, buf->first_time, buf->last_time)) {
+    if (start_state == SCHED_SCHEDULED && time_in_range(oev->start.time,
+          buf->first_time, buf->last_time)) {
       platform_output_buffer_set(buf, &oev->start);
-      oev->start.state = SCHED_SUBMITTED;
+      atomic_store_explicit(&oev->start.state, SCHED_SUBMITTED,
+          memory_order_relaxed);
     }
-    if (oev->stop.state == SCHED_SCHEDULED &&
-        time_in_range(oev->stop.time, buf->first_time, buf->last_time)) {
+    if (stop_state == SCHED_SCHEDULED && time_in_range(oev->stop.time,
+          buf->first_time, buf->last_time)) {
       platform_output_buffer_set(buf, &oev->stop);
-      oev->stop.state = SCHED_SUBMITTED;
+      atomic_store_explicit(&oev->stop.state, SCHED_SUBMITTED, memory_order_relaxed);
     }
   }
 }

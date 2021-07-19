@@ -273,6 +273,17 @@ void platform_output_buffer_set(struct output_buffer *b, struct sched_entry *s) 
   }
 }
 
+void platform_output_buffer_unset(struct output_buffer *b, struct sched_entry *s) {
+  struct output_slot *slots = b->buf;
+
+  int pos = s->time - b->first_time;
+  if (s->val) {
+    slots[pos].on &= ~(1 << s->pin);
+  } else {
+    slots[pos].off &= ~(1 << s->pin);
+  }
+}
+
 timeval_t platform_output_earliest_schedulable_time() {
   return output_buffers[current_buffer].first_time + NUM_SLOTS * 2;
 }
@@ -719,6 +730,7 @@ void platform_init_usb() {
 
   usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
   nvic_enable_irq(NVIC_OTG_FS_IRQ);
+  nvic_set_priority(NVIC_OTG_FS_IRQ, 32);
 }
 
 void platform_init_test_trigger() {
@@ -1063,6 +1075,12 @@ void tim2_isr() {
 }
 
 void dma2_stream1_isr(void) {
+	DWT_CTRL &= ~DWT_CTRL_POSTPRESET;
+DWT_CTRL |= 0x3 << DWT_CTRL_POSTPRESET_SHIFT;
+DWT_CTRL |= DWT_CTRL_CYCTAP;
+DWT_CTRL |= DWT_CTRL_PCSAMPLENA;
+set_gpio(4, 1);
+
   if (dma_get_interrupt_flag(DMA2, DMA_STREAM1, DMA_TCIF)) {
     dma_clear_interrupt_flags(DMA2, DMA_STREAM1, DMA_TCIF);
     int buffer_to_update = current_buffer;
@@ -1076,10 +1094,13 @@ void dma2_stream1_isr(void) {
 
     output_buffers[buffer_to_update].first_time = buffer_start;
     output_buffers[buffer_to_update].last_time = buffer_start + NUM_SLOTS - 1;
-    memset(output_slots[buffer_to_update], 0,
-        sizeof(output_slots[buffer_to_update]));
+    memset(output_slots[buffer_to_update], 0, sizeof(output_slots[buffer_to_update]));
     scheduler_output_buffer_ready(&output_buffers[buffer_to_update]);
   }
+set_gpio(4, 0);
+  DWT_CTRL &= ~DWT_CTRL_POSTPRESET;
+DWT_CTRL &= ~DWT_CTRL_CYCTAP;
+DWT_CTRL &= ~DWT_CTRL_PCSAMPLENA;
 }
 
 volatile int interrupt_disables = 0;
